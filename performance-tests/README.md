@@ -1,0 +1,425 @@
+# Performance Tests
+
+JMeter-based performance testing project for the Performance Testing Demo application.
+
+This project is intentionally separated from the application projects so that performance tests can be executed independently and later integrated into CI/CD.
+
+---
+
+## Technology Stack
+
+* Apache JMeter
+* JMeter Maven Plugin
+* Maven
+* Java 17
+* CSV test data
+
+---
+
+## Purpose
+
+The project executes JMeter test plans against the Report Service.
+
+Current APIs under test:
+
+```text
+GET /api/reports
+
+GET /api/reports/{reportId}/data/page
+```
+
+---
+
+# Project Structure
+
+```text
+performance-tests/
+│
+├── pom.xml
+│
+└── src/
+    └── test/
+        └── resources/
+            └── jmeter/
+                ├── report-api-load.jmx
+                └── test-data.csv
+```
+
+Depending on the JMeter Maven Plugin configuration, generated files are placed under:
+
+```text
+target/
+```
+
+---
+
+# Prerequisites
+
+Install:
+
+* Java 17
+* Maven 3.9+
+* Apache JMeter 5.6+
+
+Verify:
+
+```bash
+java -version
+mvn -version
+```
+
+---
+
+# System Under Test
+
+Before running the JMeter test, start:
+
+```text
+report-service
+```
+
+The service must be available at:
+
+```text
+http://localhost:8081
+```
+
+Verify:
+
+```text
+http://localhost:8081/api/reports
+```
+
+---
+
+# JMeter Test Plan
+
+The current JMX contains the following basic flow:
+
+```text
+Thread Group
+    |
+    +-- HTTP Request Defaults
+    |
+    +-- CSV Data Set Config
+    |
+    +-- Get Reports
+    |
+    +-- Get Report Data
+```
+
+---
+
+# Test Data
+
+The test uses CSV-driven parameters.
+
+Variables:
+
+```text
+reportId
+startDate
+endDate
+page
+size
+```
+
+Example:
+
+```csv
+1,2026-01-01,2026-03-31,0,50
+2,2026-01-01,2026-06-30,0,50
+3,2026-01-01,2026-09-30,0,50
+```
+
+Do not include the header row if the JMeter CSV Data Set Config explicitly defines:
+
+```text
+reportId,startDate,endDate,page,size
+```
+
+---
+
+# Run from JMeter GUI
+
+Open the JMX file:
+
+```text
+src/test/resources/jmeter/report-api-load.jmx
+```
+
+Run it from the JMeter GUI.
+
+The initial baseline configuration is:
+
+```text
+Threads: 10
+Ramp-up: 10 seconds
+Loop Count: 1
+```
+
+Useful listeners for local debugging:
+
+```text
+View Results Tree
+Summary Report
+```
+
+Do not use `View Results Tree` for large load tests because it consumes significant memory.
+
+---
+
+# Run from Maven
+
+From this directory:
+
+```bash
+mvn clean verify
+```
+
+The Maven JMeter plugin executes the JMX.
+
+Generated output is placed under:
+
+```text
+target/
+```
+
+After execution, inspect:
+
+```bash
+dir /s target
+```
+
+Look for:
+
+```text
+.jtl
+index.html
+```
+
+The `.jtl` file contains the raw JMeter results.
+
+The generated HTML dashboard provides performance statistics and graphs.
+
+---
+
+# Performance Metrics
+
+The primary metrics to analyze are:
+
+## Response Time
+
+Average, minimum and maximum response time.
+
+## Percentiles
+
+Focus on:
+
+```text
+P90
+P95
+P99
+```
+
+Percentiles are generally more useful than average response time when identifying slow requests.
+
+## Throughput
+
+Number of requests processed per second.
+
+## Error Rate
+
+Percentage of failed requests.
+
+## Server Metrics
+
+For higher loads, monitor the Report Service and MySQL:
+
+```text
+CPU
+Memory
+JVM heap
+GC
+Threads
+Database connections
+Database CPU
+Query execution time
+```
+
+---
+
+# Current Test
+
+The initial test uses:
+
+```text
+10 virtual users
+10 second ramp-up
+1 iteration
+```
+
+The goal of the first execution is to establish a baseline.
+
+Example workload:
+
+```text
+10 users
+   |
+   +-- GET /api/reports
+   |
+   +-- GET /api/reports/{id}/data/page
+```
+
+---
+
+# Planned Test Profiles
+
+The project can later support:
+
+```text
+Smoke
+1-5 users
+
+Baseline
+10 users
+
+Load
+50 users
+
+Load
+100 users
+
+Stress
+250 users
+
+Stress
+500+ users
+
+Spike
+Rapid increase in users
+
+Soak
+Long-running test
+```
+
+---
+
+# Recommended Execution Strategy
+
+Do not immediately start with hundreds of users.
+
+Use:
+
+```text
+10 users
+    ↓
+50 users
+    ↓
+100 users
+    ↓
+250 users
+    ↓
+500 users
+```
+
+Compare each run using:
+
+```text
+Average
+P90
+P95
+P99
+Throughput
+Error %
+```
+
+---
+
+# Example JMeter API Requests
+
+### Get Reports
+
+```http
+GET http://localhost:8081/api/reports
+```
+
+### Get Report Data
+
+```http
+GET http://localhost:8081/api/reports/1/data/page
+    ?startDate=2026-01-01
+    &endDate=2026-12-31
+    &page=0
+    &size=50
+```
+
+The JMX parameterizes these values using the CSV test data.
+
+---
+
+# CI/CD
+
+The project is designed to be integrated with Jenkins later.
+
+A future Jenkins pipeline can:
+
+```text
+Checkout
+   ↓
+Build application
+   ↓
+Start test environment
+   ↓
+Execute JMeter
+   ↓
+Generate JMeter HTML report
+   ↓
+Archive results
+   ↓
+Publish report
+```
+
+Example future command:
+
+```bash
+mvn clean verify
+```
+
+---
+
+# Important
+
+JMeter is being used here for **HTTP/API performance testing**.
+
+It does not measure:
+
+* Angular component rendering
+* Browser paint time
+* DOM rendering
+* JavaScript execution in the browser
+* iframe rendering performance
+
+Those measurements require browser-focused tools.
+
+The purpose of this project is to measure the backend/API workload generated by the application.
+
+---
+
+# Future Enhancements
+
+* Parameterize users
+* Parameterize ramp-up
+* Parameterize duration
+* Add authentication
+* Add token extraction
+* Add assertions
+* Add multiple scenarios
+* Add smoke/load/stress/soak profiles
+* Add HTML report publishing
+* Add Jenkins integration
+* Add JVM monitoring
+* Add MySQL monitoring
+* Add Superset API workload
+* Add automated performance thresholds
+* Fail CI build when performance thresholds are exceeded

@@ -29,3 +29,5 @@ target/
 .project
 .mvn
 .gitattributes
+
+*.vscode/

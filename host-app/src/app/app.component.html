@@ -1,0 +1,25 @@
+@if (!isLoggedIn) {
+
+  <app-login
+    (loginSuccess)="loginSuccessful()">
+  </app-login>
+
+} @else {
+
+  <app-navigation
+    (reportSelected)="openReports()">
+  </app-navigation>
+
+  @if (showReports) {
+
+    <div class="content">
+
+      <h2>Regulatory Reports</h2>
+
+      <ng-container #reportContainer></ng-container>
+
+    </div>
+
+  }
+
+}

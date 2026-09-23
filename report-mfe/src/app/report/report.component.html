@@ -1,0 +1,159 @@
+<div class="report-container">
+
+  <div class="page-header">
+    <div>
+      <h2>Regulatory Report</h2>
+      <p>Select a report and reporting date to load the report data.</p>
+    </div>
+  </div>
+
+@if (loading) { <div class="message loading">
+Loading reports... </div>
+}
+
+@if (errorMessage) { <div class="message error">
+{{ errorMessage }} </div>
+}
+
+  <div class="filter-panel">
+
+```
+<div class="form-group">
+
+  <label for="reportType">
+    Report Type
+  </label>
+
+  <select
+    id="reportType"
+    [(ngModel)]="selectedReportId">
+
+    @for (report of reports; track report.id) {
+
+      <option [ngValue]="report.id">
+        {{ report.reportName }}
+      </option>
+
+    }
+
+  </select>
+
+</div>
+
+<div class="form-group">
+
+  <label for="reportingDate">
+    Reporting Date
+  </label>
+
+  <input
+    id="reportingDate"
+    type="date"
+    [(ngModel)]="reportingDate">
+
+</div>
+
+<div class="form-group button-group">
+
+  <button
+    type="button"
+    (click)="loadReport()"
+    [disabled]="dataLoading || !selectedReportId">
+
+    @if (dataLoading) {
+      Loading...
+    } @else {
+      Load Report
+    }
+
+  </button>
+
+</div>
+```
+
+  </div>
+
+@if (dataLoading) {
+
+```
+<div class="message loading">
+  Loading report data...
+</div>
+```
+
+}
+
+@if (!dataLoading && reportData.length > 0) {
+
+```
+<div class="report-summary">
+
+  <div class="summary-item">
+    <span class="summary-label">Records</span>
+    <strong>{{ reportData.length }}</strong>
+  </div>
+
+  <div class="summary-item">
+    <span class="summary-label">Report Date</span>
+    <strong>{{ reportingDate }}</strong>
+  </div>
+
+  <div class="summary-item">
+    <span class="summary-label">Report ID</span>
+    <strong>{{ selectedReportId }}</strong>
+  </div>
+
+</div>
+
+<div class="report-table-container">
+
+  <table>
+
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Reporting Date</th>
+        <th>Business Unit</th>
+        <th>Currency</th>
+        <th>Amount</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      @for (row of reportData; track row.id) {
+
+        <tr>
+          <td>{{ row.id }}</td>
+          <td>{{ row.reportingDate }}</td>
+          <td>{{ row.businessUnit }}</td>
+          <td>{{ row.currency }}</td>
+          <td>{{ row.amount | number:'1.2-2' }}</td>
+          <td>
+            <span class="status">
+              {{ row.status }}
+            </span>
+          </td>
+        </tr>
+
+      }
+
+    </tbody>
+
+  </table>
+
+</div>
+
+}
+
+@if (!dataLoading && reportData.length === 0 && selectedReportId) {
+
+<div class="message empty">
+  No data found for the selected report and reporting date.
+</div>
+
+
+}
+
+</div>
